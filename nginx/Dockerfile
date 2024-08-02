@@ -1,14 +1,8 @@
-FROM nginx:stable-alpine
+FROM nginx:stable-alpine3.18
 
 ENV NGINX_DIR=/etc/nginx
 
-# Update dan install openssl
-# RUN apk update --no-cache && \
-#     apk upgrade --no-cache && \
-#     apk add --no-cache openssl
-
-RUN sed -i 's/dl-cdn.alpinelinux.org/dl-5.alpinelinux.org/g' /etc/apk/repositories && \
-    apk update --no-cache && \
+RUN apk update --no-cache && \
     apk upgrade --no-cache && \
     apk add --no-cache openssl
 
@@ -18,7 +12,7 @@ COPY setup/index.html /usr/share/nginx/html/index.html
 COPY setup/default.conf ${NGINX_DIR}/conf.d/
 
 # Membuat direktori untuk sertifikat
-RUN mkdir -p ${NGINX_DIR}/certs
+# RUN mkdir -p ${NGINX_DIR}/certs
 
 # Generate sertifikat SSL
 # RUN openssl req \
