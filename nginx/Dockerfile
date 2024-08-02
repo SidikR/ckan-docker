@@ -2,7 +2,8 @@ FROM nginx:stable-alpine
 
 ENV NGINX_DIR=/etc/nginx
 
-RUN apk update --no-cache && \
+RUN sed -i 's/dl-cdn.alpinelinux.org/dl-3.alpinelinux.org/g' /etc/apk/repositories && \
+    apk update --no-cache && \
     apk upgrade --no-cache && \
     apk add --no-cache openssl
 
