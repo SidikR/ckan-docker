@@ -2,28 +2,28 @@ FROM nginx:stable-alpine
 
 ENV NGINX_DIR=/etc/nginx
 
-# Function to retry a command up to 5 times
-RUN retry() { \
-  local n=1; \
-  local max=5; \
-  local delay=5; \
-  while true; do \
-    "$@" && break || { \
-      if [[ $n -lt $max ]]; then \
-        ((n++)); \
-        echo "Command failed. Attempt $n/$max:"; \
-        sleep $delay; \
-      else \
-        echo "The command has failed after $n attempts."; \
-        return 1; \
-      fi; \
-    }; \
-  done; \
-}
+# Define the retry function
+RUN echo '#!/bin/sh\n\
+n=1\n\
+max=5\n\
+delay=5\n\
+while true; do\n\
+  "$@" && break || {\n\
+    if [ $n -lt $max ]; then\n\
+      n=$((n+1))\n\
+      echo "Command failed. Attempt $n/$max:"\n\
+      sleep $delay\n\
+    else\n\
+      echo "The command has failed after $n attempts."\n\
+      exit 1\n\
+    fi\n\
+  }\n\
+done' > /usr/local/bin/retry && chmod +x /usr/local/bin/retry
 
-RUN retry apk update --no-cache && \
-    retry apk upgrade --no-cache && \
-    retry apk add --no-cache openssl
+# Use the retry function for apk commands
+RUN /usr/local/bin/retry apk update --no-cache && \
+    /usr/local/bin/retry apk upgrade --no-cache && \
+    /usr/local/bin/retry apk add --no-cache openssl
 
 COPY setup/nginx.conf ${NGINX_DIR}/nginx.conf
 COPY setup/index.html /usr/share/nginx/html/index.html
