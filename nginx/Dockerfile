@@ -2,28 +2,45 @@ FROM nginx:stable-alpine
 
 ENV NGINX_DIR=/etc/nginx
 
-# Define the retry function
-RUN echo '#!/bin/sh\n\
-n=1\n\
-max=5\n\
-delay=5\n\
-while true; do\n\
-  "$@" && break || {\n\
-    if [ $n -lt $max ]; then\n\
-      n=$((n+1))\n\
-      echo "Command failed. Attempt $n/$max:"\n\
-      sleep $delay\n\
-    else\n\
-      echo "The command has failed after $n attempts."\n\
-      exit 1\n\
-    fi\n\
-  }\n\
-done' > /usr/local/bin/retry && chmod +x /usr/local/bin/retry
+# Function to retry a command up to 5 times
+RUN set -e; \
+  max=5; \
+  count=1; \
+  until apk update --no-cache; do \
+    if [ $count -eq $max ]; then \
+      echo "Failed to update after $count attempts."; \
+      exit 1; \
+    fi; \
+    echo "Retrying update ($count/$max)..."; \
+    count=$((count + 1)); \
+    sleep 5; \
+  done
 
-# Use the retry function for apk commands
-RUN /usr/local/bin/retry apk update --no-cache && \
-    /usr/local/bin/retry apk upgrade --no-cache && \
-    /usr/local/bin/retry apk add --no-cache openssl
+RUN set -e; \
+  max=5; \
+  count=1; \
+  until apk upgrade --no-cache; do \
+    if [ $count -eq $max ]; then \
+      echo "Failed to upgrade after $count attempts."; \
+      exit 1; \
+    fi; \
+    echo "Retrying upgrade ($count/$max)..."; \
+    count=$((count + 1)); \
+    sleep 5; \
+  done
+
+RUN set -e; \
+  max=5; \
+  count=1; \
+  until apk add --no-cache openssl; do \
+    if [ $count -eq $max ]; then \
+      echo "Failed to add openssl after $count attempts."; \
+      exit 1; \
+    fi; \
+    echo "Retrying add openssl ($count/$max)..."; \
+    count=$((count + 1)); \
+    sleep 5; \
+  done
 
 COPY setup/nginx.conf ${NGINX_DIR}/nginx.conf
 COPY setup/index.html /usr/share/nginx/html/index.html
